@@ -1,314 +1,63 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>アンケート集計アプリ</title>
-
-<style>
-body{
-    margin:0;
-    font-family:sans-serif;
-    background:#f0f4f8;
-    color:#333;
-}
-
-.container{
-    max-width:700px;
-    margin:auto;
-    padding:20px;
-}
-
-.card{
-    background:white;
-    border-radius:16px;
-    padding:20px;
-    margin-bottom:20px;
-    box-shadow:0 4px 10px rgba(0,0,0,0.1);
-}
-
-h1,h2{
-    text-align:center;
-}
-
-input{
-    width:100%;
-    padding:12px;
-    margin-top:10px;
-    border-radius:10px;
-    border:1px solid #ccc;
-    box-sizing:border-box;
-    font-size:16px;
-}
-
-button{
-    width:100%;
-    padding:14px;
-    margin-top:15px;
-    border:none;
-    border-radius:12px;
-    background:#2d89ef;
-    color:white;
-    font-size:18px;
-    cursor:pointer;
-}
-
-button:hover{
-    background:#1b6fd1;
-}
-
-.choiceBtn{
-    background:white;
-    color:#333;
-    border:2px solid #2d89ef;
-}
-
-.choiceBtn:hover{
-    background:#2d89ef;
-    color:white;
-}
-
-.resultBar{
-    height:35px;
-    background:#2d89ef;
-    border-radius:10px;
-    margin-top:8px;
-    color:white;
-    display:flex;
-    align-items:center;
-    padding-left:10px;
-    box-sizing:border-box;
-    transition:0.3s;
-}
-
-.hidden{
-    display:none;
-}
-
-.small{
-    font-size:14px;
-    color:#666;
-    text-align:center;
-}
-</style>
-</head>
-<body>
-
-<div class="container">
-
-    <!-- 作成画面 -->
-    <div id="setupScreen" class="card">
-        <h1>アンケート作成</h1>
-
-        <input id="questionInput" placeholder="質問を入力">
-
-        <input class="choiceInput" placeholder="選択肢1">
-        <input class="choiceInput" placeholder="選択肢2">
-        <input class="choiceInput" placeholder="選択肢3">
-        <input class="choiceInput" placeholder="選択肢4">
-        <input class="choiceInput" placeholder="選択肢5">
-
-        <button onclick="createSurvey()">アンケート開始</button>
-    </div>
-
-    <!-- 回答画面 -->
-    <div id="voteScreen" class="card hidden">
-        <h2 id="questionText"></h2>
-
-        <div id="choicesArea"></div>
-
-        <button onclick="showResults()">集計結果を見る</button>
-
-        <button onclick="resetVotes()">投票リセット</button>
-    </div>
-
-    <!-- 結果画面 -->
-    <div id="resultScreen" class="card hidden">
-        <h2>集計結果</h2>
-
-        <div id="resultsArea"></div>
-
-        <button onclick="backToVote()">戻る</button>
-    </div>
-
-</div>
-
+<script src="https://cdn.jsdelivr.net/npm/heic2any/dist/heic2any.min.js"></script>
 <script>
-let surveyData = {
-    question:"",
-    choices:[],
-    votes:[]
-};
-
-function saveData(){
-    localStorage.setItem("surveyData", JSON.stringify(surveyData));
-}
-
-function loadData(){
-    const data = localStorage.getItem("surveyData");
-
-    if(data){
-        surveyData = JSON.parse(data);
-
-        if(surveyData.question){
-            startVoteScreen();
-        }
+function isHeicFile(file) {
+    if (!file) {
+        return false;
     }
+
+    const name = typeof file.name === "string" ? file.name.toLowerCase() : "";
+    const type = typeof file.type === "string" ? file.type.toLowerCase() : "";
+    return name.endsWith(".heic") || name.endsWith(".heif") ||
+        type.includes("heic") || type.includes("heif");
 }
 
-function createSurvey(){
+async function convertHeicToDataUrl(file) {
+    if (typeof heic2any !== "function") {
+        throw new Error("HEIC変換ライブラリを読み込めませんでした");
+    }
 
-    const question =
-        document.getElementById("questionInput").value.trim();
-
-    const choiceInputs =
-        document.querySelectorAll(".choiceInput");
-
-    let choices = [];
-
-    choiceInputs.forEach(input=>{
-        if(input.value.trim() !== ""){
-            choices.push(input.value.trim());
-        }
+    const convertedBlob = await heic2any({
+        blob: file,
+        toType: "image/jpeg",
+        quality: 0.9
     });
 
-    if(question === ""){
-        alert("質問を入力してください");
+    const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+    return fileToDataUrl(blob);
+}
+
+async function handleChoiceImageChange(input, preview) {
+    const file = input.files && input.files[0];
+    if (!file) {
+        input.dataset.imageData = "";
+        preview.src = "";
+        preview.classList.add("hidden");
         return;
     }
 
-    if(choices.length < 2){
-        alert("選択肢を2つ以上入力してください");
+    if (!file.type.startsWith("image/")) {
+        input.value = "";
+        input.dataset.imageData = "";
+        preview.src = "";
+        preview.classList.add("hidden");
+        alert("画像ファイルを選択してください");
         return;
     }
 
-    surveyData.question = question;
-    surveyData.choices = choices;
-    surveyData.votes = new Array(choices.length).fill(0);
+    try {
+        const dataUrl = isHeicFile(file)
+            ? await convertHeicToDataUrl(file)
+            : await fileToDataUrl(file);
 
-    saveData();
-
-    startVoteScreen();
-}
-
-function startVoteScreen(){
-
-    document.getElementById("setupScreen")
-        .classList.add("hidden");
-
-    document.getElementById("voteScreen")
-        .classList.remove("hidden");
-
-    document.getElementById("resultScreen")
-        .classList.add("hidden");
-
-    document.getElementById("questionText")
-        .innerText = surveyData.question;
-
-    const area =
-        document.getElementById("choicesArea");
-
-    area.innerHTML = "";
-
-    surveyData.choices.forEach((choice,index)=>{
-
-        const btn = document.createElement("button");
-
-        btn.className = "choiceBtn";
-
-        btn.innerText = choice;
-
-        btn.onclick = ()=>vote(index);
-
-        area.appendChild(btn);
-    });
-}
-
-function vote(index){
-
-    surveyData.votes[index]++;
-
-    saveData();
-
-    alert("投票しました");
-}
-
-function showResults(){
-
-    document.getElementById("voteScreen")
-        .classList.add("hidden");
-
-    document.getElementById("resultScreen")
-        .classList.remove("hidden");
-
-    const area =
-        document.getElementById("resultsArea");
-
-    area.innerHTML = "";
-
-    const total =
-        surveyData.votes.reduce((a,b)=>a+b,0);
-
-    surveyData.choices.forEach((choice,index)=>{
-
-        const votes = surveyData.votes[index];
-
-        const percent =
-            total === 0 ? 0 :
-            Math.round(votes / total * 100);
-
-        const wrapper =
-            document.createElement("div");
-
-        wrapper.innerHTML = `
-            <div>
-                <strong>${choice}</strong>
-                (${votes}票 / ${percent}%)
-            </div>
-            <div class="resultBar"
-                 style="width:${percent}%">
-                 ${percent}%
-            </div>
-        `;
-
-        area.appendChild(wrapper);
-    });
-
-    const totalText =
-        document.createElement("p");
-
-    totalText.className = "small";
-
-    totalText.innerText =
-        "総投票数: " + total;
-
-    area.appendChild(totalText);
-}
-
-function backToVote(){
-
-    document.getElementById("resultScreen")
-        .classList.add("hidden");
-
-    document.getElementById("voteScreen")
-        .classList.remove("hidden");
-}
-
-function resetVotes(){
-
-    if(confirm("投票をリセットしますか？")){
-
-        surveyData.votes =
-            new Array(surveyData.choices.length).fill(0);
-
-        saveData();
-
-        alert("リセットしました");
+        input.dataset.imageData = dataUrl;
+        preview.src = dataUrl;
+        preview.classList.remove("hidden");
+    } catch (error) {
+        input.value = "";
+        input.dataset.imageData = "";
+        preview.src = "";
+        preview.classList.add("hidden");
+        alert(error.message || "画像の読み込みに失敗しました");
     }
 }
-
-loadData();
 </script>
-
-</body>
-</html>
