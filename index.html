@@ -1,5 +1,316 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>アンケート集計アプリ</title>
+<style>
+body {
+    margin: 0;
+    font-family: sans-serif;
+    background: #f0f4f8;
+    color: #333;
+}
+
+.container {
+    max-width: 700px;
+    margin: auto;
+    padding: 20px;
+}
+
+.card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+h1, h2, h3 {
+    text-align: center;
+}
+
+input {
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    border-radius: 10px;
+    border: 1px solid #ccc;
+    box-sizing: border-box;
+    font-size: 16px;
+}
+
+button {
+    width: 100%;
+    padding: 14px;
+    margin-top: 15px;
+    border: none;
+    border-radius: 12px;
+    background: #2d89ef;
+    color: white;
+    font-size: 18px;
+    cursor: pointer;
+}
+
+button:hover {
+    background: #1b6fd1;
+}
+
+button:disabled {
+    background: #9bbce3;
+    cursor: not-allowed;
+}
+
+.choiceBtn {
+    background: white;
+    color: #333;
+    border: 2px solid #2d89ef;
+}
+
+.choiceBtn:hover {
+    background: #2d89ef;
+    color: white;
+}
+
+.hidden {
+    display: none;
+}
+
+.small {
+    font-size: 14px;
+    color: #666;
+    text-align: center;
+}
+
+.questionBlock {
+    padding: 16px;
+    border: 1px solid #d9e2ec;
+    border-radius: 14px;
+    margin-top: 16px;
+    background: #f8fbff;
+}
+
+.navButtons {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+}
+
+.navButtons button {
+    margin-top: 0;
+}
+
+.resultItem {
+    border: 1px solid #d9e2ec;
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 10px;
+    background: #f8fbff;
+}
+
+.resultQuestion {
+    margin-top: 22px;
+}
+
+.savePanel {
+    margin-top: 18px;
+    padding: 16px;
+    border: 1px solid #d9e2ec;
+    border-radius: 14px;
+    background: #f8fbff;
+}
+
+.savedSurveyItem {
+    border: 1px solid #d9e2ec;
+    border-radius: 12px;
+    padding: 14px;
+    margin-top: 10px;
+    background: #f8fbff;
+}
+
+.savedSurveyTitle {
+    font-weight: bold;
+}
+
+.savedSurveyMeta {
+    margin-top: 6px;
+    font-size: 14px;
+    color: #666;
+}
+
+.choiceInputGroup {
+    margin-top: 12px;
+    padding: 12px;
+    border: 1px solid #d9e2ec;
+    border-radius: 12px;
+    background: #ffffff;
+}
+
+.choiceImagePreview {
+    display: block;
+    width: 100%;
+    max-height: 180px;
+    object-fit: contain;
+    margin-top: 10px;
+    border-radius: 10px;
+    border: 1px solid #d9e2ec;
+    background: #f8fbff;
+}
+
+.choiceCard {
+    margin-top: 12px;
+}
+
+.choiceCardImage {
+    display: block;
+    width: 100%;
+    max-height: 220px;
+    object-fit: contain;
+    margin-top: 10px;
+    border-radius: 10px;
+    border: 1px solid #d9e2ec;
+    background: #f8fbff;
+}
+
+.actionButtons {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+.actionButtons button {
+    margin-top: 0;
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div id="setupScreen" class="card">
+        <h1>アンケート作成</h1>
+        <p class="small">質問は最大10件まで登録できます。入力した質問だけが保存されます。</p>
+        <div id="savedSurveysPanel" class="savePanel">
+            <h3>保存済みアンケート</h3>
+            <div id="savedSurveysArea" class="small">読み込み中...</div>
+        </div>
+        <div id="questionFormArea"></div>
+        <button id="createSurveyButton" type="button">アンケート開始</button>
+    </div>
+
+    <div id="voteScreen" class="card hidden">
+        <p id="questionCounter" class="small"></p>
+        <h2 id="questionText"></h2>
+        <div id="choicesArea"></div>
+
+        <div class="navButtons">
+            <button id="prevQuestionButton" type="button">前の質問</button>
+            <button id="nextQuestionButton" type="button">次の質問</button>
+        </div>
+
+        <button id="showResultsButton" type="button">集計結果を見る</button>
+        <button id="resetVotesButton" type="button">投票リセット</button>
+        <div class="savePanel">
+            <h3>このアンケートを保存</h3>
+            <input id="saveSurveyNameInput" type="text" placeholder="保存名を入力">
+            <button id="saveSurveyButton" type="button">保存する</button>
+        </div>
+        <button id="backToSetupButton" type="button">新しく作成する</button>
+    </div>
+
+    <div id="resultScreen" class="card hidden">
+        <h2>集計結果</h2>
+        <div id="resultsArea"></div>
+        <button id="backToVoteButton" type="button">戻る</button>
+        <button id="backToSetupFromResultButton" type="button">新しく作成する</button>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/heic2any/dist/heic2any.min.js"></script>
 <script>
+const MAX_QUESTIONS = 10;
+const MAX_CHOICES = 5;
+const DB_NAME = "survey-app-db";
+const DB_VERSION = 1;
+const SURVEY_STORE = "surveys";
+const APP_STATE_STORE = "appState";
+const DRAFT_KEY = "draftSurvey";
+
+const emptySurveyData = () => ({
+    questions: [],
+    currentQuestionIndex: 0
+});
+
+let surveyData = emptySurveyData();
+let storageMode = "memory";
+let dbPromise = null;
+
+function showStorageNotice() {
+    if (storageMode !== "memory") {
+        return;
+    }
+
+    const notice = document.createElement("p");
+    notice.className = "small";
+    notice.textContent =
+        "この表示環境では保存機能が使えないため、再読み込みするとアンケート内容は消えます。";
+
+    const setupScreen = document.getElementById("setupScreen");
+    if (!document.getElementById("storageNotice")) {
+        notice.id = "storageNotice";
+        setupScreen.insertBefore(notice, document.getElementById("questionFormArea"));
+    }
+}
+
+function getLocalStorageSafe() {
+    try {
+        return window.localStorage;
+    } catch (error) {
+        return null;
+    }
+}
+
+function openDatabase() {
+    if (!("indexedDB" in window)) {
+        return Promise.reject(new Error("IndexedDB is not supported"));
+    }
+
+    if (dbPromise) {
+        return dbPromise;
+    }
+
+    dbPromise = new Promise((resolve, reject) => {
+        const request = window.indexedDB.open(DB_NAME, DB_VERSION);
+
+        request.onupgradeneeded = () => {
+            const db = request.result;
+
+            if (!db.objectStoreNames.contains(SURVEY_STORE)) {
+                db.createObjectStore(SURVEY_STORE, { keyPath: "id" });
+            }
+
+            if (!db.objectStoreNames.contains(APP_STATE_STORE)) {
+                db.createObjectStore(APP_STATE_STORE, { keyPath: "key" });
+            }
+        };
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error("IndexedDB open failed"));
+    });
+
+    return dbPromise;
+}
+
+function requestToPromise(request) {
+    return new Promise((resolve, reject) => {
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error("Database request failed"));
+    });
+}
+
+function cloneSurveyData(data) {
+    return JSON.parse(JSON.stringify(data));
+}
+
 function isHeicFile(file) {
     if (!file) {
         return false;
@@ -24,6 +335,343 @@ async function convertHeicToDataUrl(file) {
 
     const blob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
     return fileToDataUrl(blob);
+}
+
+function normalizeChoice(choice) {
+    if (typeof choice === "string") {
+        return {
+            text: choice,
+            image: ""
+        };
+    }
+
+    if (!choice || typeof choice.text !== "string") {
+        return null;
+    }
+
+    return {
+        text: choice.text,
+        image: typeof choice.image === "string" ? choice.image : ""
+    };
+}
+
+async function initializeStorage() {
+    try {
+        await openDatabase();
+        storageMode = "indexedDB";
+        return;
+    } catch (error) {
+        const localStorageRef = getLocalStorageSafe();
+        if (localStorageRef) {
+            storageMode = "localStorage";
+            return;
+        }
+
+        storageMode = "memory";
+        showStorageNotice();
+    }
+}
+
+async function readAppState(key) {
+    if (storageMode === "indexedDB") {
+        const db = await openDatabase();
+        const tx = db.transaction(APP_STATE_STORE, "readonly");
+        const store = tx.objectStore(APP_STATE_STORE);
+        const result = await requestToPromise(store.get(key));
+        return result ? result.value : null;
+    }
+
+    if (storageMode === "localStorage") {
+        const storage = getLocalStorageSafe();
+        if (!storage) {
+            return null;
+        }
+
+        const raw = storage.getItem(key);
+        return raw ? JSON.parse(raw) : null;
+    }
+
+    return null;
+}
+
+async function writeAppState(key, value) {
+    if (storageMode === "indexedDB") {
+        const db = await openDatabase();
+        const tx = db.transaction(APP_STATE_STORE, "readwrite");
+        const store = tx.objectStore(APP_STATE_STORE);
+        await requestToPromise(store.put({ key, value }));
+        return;
+    }
+
+    if (storageMode === "localStorage") {
+        const storage = getLocalStorageSafe();
+        if (!storage) {
+            return;
+        }
+
+        storage.setItem(key, JSON.stringify(value));
+    }
+}
+
+async function removeAppState(key) {
+    if (storageMode === "indexedDB") {
+        const db = await openDatabase();
+        const tx = db.transaction(APP_STATE_STORE, "readwrite");
+        const store = tx.objectStore(APP_STATE_STORE);
+        await requestToPromise(store.delete(key));
+        return;
+    }
+
+    if (storageMode === "localStorage") {
+        const storage = getLocalStorageSafe();
+        if (!storage) {
+            return;
+        }
+
+        storage.removeItem(key);
+    }
+}
+
+async function listSavedSurveys() {
+    if (storageMode === "indexedDB") {
+        const db = await openDatabase();
+        const tx = db.transaction(SURVEY_STORE, "readonly");
+        const store = tx.objectStore(SURVEY_STORE);
+        const items = await requestToPromise(store.getAll());
+        return items.sort((a, b) => b.savedAt - a.savedAt);
+    }
+
+    if (storageMode === "localStorage") {
+        const storage = getLocalStorageSafe();
+        if (!storage) {
+            return [];
+        }
+
+        const raw = storage.getItem("savedSurveys");
+        const items = raw ? JSON.parse(raw) : [];
+        return Array.isArray(items) ? items.sort((a, b) => b.savedAt - a.savedAt) : [];
+    }
+
+    return [];
+}
+
+async function persistSavedSurveys(items) {
+    if (storageMode !== "localStorage") {
+        return;
+    }
+
+    const storage = getLocalStorageSafe();
+    if (!storage) {
+        return;
+    }
+
+    storage.setItem("savedSurveys", JSON.stringify(items));
+}
+
+async function saveNamedSurvey(name) {
+    const payload = {
+        id: "survey-" + Date.now() + "-" + Math.random().toString(16).slice(2),
+        name,
+        savedAt: Date.now(),
+        data: cloneSurveyData(surveyData)
+    };
+
+    if (storageMode === "indexedDB") {
+        const db = await openDatabase();
+        const tx = db.transaction(SURVEY_STORE, "readwrite");
+        const store = tx.objectStore(SURVEY_STORE);
+        await requestToPromise(store.put(payload));
+        return;
+    }
+
+    if (storageMode === "localStorage") {
+        const items = await listSavedSurveys();
+        items.push(payload);
+        await persistSavedSurveys(items);
+    }
+}
+
+async function loadNamedSurvey(id) {
+    if (storageMode === "indexedDB") {
+        const db = await openDatabase();
+        const tx = db.transaction(SURVEY_STORE, "readonly");
+        const store = tx.objectStore(SURVEY_STORE);
+        return requestToPromise(store.get(id));
+    }
+
+    if (storageMode === "localStorage") {
+        const items = await listSavedSurveys();
+        return items.find((item) => item.id === id) || null;
+    }
+
+    return null;
+}
+
+async function deleteNamedSurvey(id) {
+    if (storageMode === "indexedDB") {
+        const db = await openDatabase();
+        const tx = db.transaction(SURVEY_STORE, "readwrite");
+        const store = tx.objectStore(SURVEY_STORE);
+        await requestToPromise(store.delete(id));
+        return;
+    }
+
+    if (storageMode === "localStorage") {
+        const items = await listSavedSurveys();
+        const filtered = items.filter((item) => item.id !== id);
+        await persistSavedSurveys(filtered);
+    }
+}
+
+async function saveData() {
+    if (storageMode === "memory") {
+        showStorageNotice();
+        return;
+    }
+
+    try {
+        await writeAppState(DRAFT_KEY, surveyData);
+    } catch (error) {
+        storageMode = "memory";
+        showStorageNotice();
+    }
+}
+
+function isValidSurveyData(data) {
+    if (!data || !Array.isArray(data.questions)) {
+        return false;
+    }
+
+    if (
+        typeof data.currentQuestionIndex !== "number" ||
+        !Number.isInteger(data.currentQuestionIndex)
+    ) {
+        return false;
+    }
+
+    if (data.questions.length === 0 || data.questions.length > MAX_QUESTIONS) {
+        return false;
+    }
+
+    return data.questions.every((item) => {
+        if (!item || typeof item.question !== "string") {
+            return false;
+        }
+
+        if (!Array.isArray(item.choices) || !Array.isArray(item.votes)) {
+            return false;
+        }
+
+        if (
+            item.choices.length < 2 ||
+            item.choices.length > MAX_CHOICES ||
+            item.choices.length !== item.votes.length
+        ) {
+            return false;
+        }
+
+        return item.choices.every((choice) => normalizeChoice(choice) !== null) &&
+            item.votes.every((vote) => Number.isInteger(vote) && vote >= 0);
+    });
+}
+
+function normalizeSurveyData(data) {
+    if (!isValidSurveyData(data)) {
+        return null;
+    }
+
+    return {
+        questions: data.questions.map((item) => ({
+            question: item.question,
+            choices: item.choices.map((choice) => normalizeChoice(choice)),
+            votes: [...item.votes]
+        })),
+        currentQuestionIndex: data.currentQuestionIndex
+    };
+}
+
+async function loadData() {
+    try {
+        const draft = await readAppState(DRAFT_KEY);
+        const normalized = normalizeSurveyData(draft);
+
+        if (normalized) {
+            surveyData = normalized;
+            surveyData.currentQuestionIndex = Math.min(
+                surveyData.currentQuestionIndex,
+                surveyData.questions.length - 1
+            );
+            startVoteScreen();
+            return;
+        }
+    } catch (error) {
+        console.error("下書きアンケートの読み込みに失敗しました", error);
+    }
+
+    surveyData = emptySurveyData();
+    renderSetupInputs();
+}
+
+function renderSetupInputs() {
+    const area = document.getElementById("questionFormArea");
+    area.textContent = "";
+
+    for (let questionIndex = 0; questionIndex < MAX_QUESTIONS; questionIndex += 1) {
+        const block = document.createElement("section");
+        block.className = "questionBlock";
+
+        const title = document.createElement("h3");
+        title.textContent = "質問" + (questionIndex + 1);
+        block.appendChild(title);
+
+        const questionInput = document.createElement("input");
+        questionInput.className = "questionInput";
+        questionInput.placeholder = "質問を入力";
+        questionInput.setAttribute("data-question-index", String(questionIndex));
+        block.appendChild(questionInput);
+
+        for (let choiceIndex = 0; choiceIndex < MAX_CHOICES; choiceIndex += 1) {
+            const choiceGroup = document.createElement("div");
+            choiceGroup.className = "choiceInputGroup";
+
+            const choiceInput = document.createElement("input");
+            choiceInput.className = "choiceInput";
+            choiceInput.placeholder = "選択肢" + (choiceIndex + 1);
+            choiceInput.setAttribute("data-question-index", String(questionIndex));
+            choiceInput.setAttribute("data-choice-index", String(choiceIndex));
+            choiceGroup.appendChild(choiceInput);
+
+            const imageInput = document.createElement("input");
+            imageInput.type = "file";
+            imageInput.accept = "image/*";
+            imageInput.className = "choiceImageInput";
+            imageInput.setAttribute("data-question-index", String(questionIndex));
+            imageInput.setAttribute("data-choice-index", String(choiceIndex));
+            choiceGroup.appendChild(imageInput);
+
+            const preview = document.createElement("img");
+            preview.className = "choiceImagePreview hidden";
+            preview.alt = "選択肢画像プレビュー";
+            choiceGroup.appendChild(preview);
+
+            imageInput.addEventListener("change", () => {
+                void handleChoiceImageChange(imageInput, preview);
+            });
+
+            block.appendChild(choiceGroup);
+        }
+
+        area.appendChild(block);
+    }
+}
+
+async function fileToDataUrl(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : "");
+        reader.onerror = () => reject(new Error("画像の読み込みに失敗しました"));
+        reader.readAsDataURL(file);
+    });
 }
 
 async function handleChoiceImageChange(input, preview) {
@@ -60,4 +708,359 @@ async function handleChoiceImageChange(input, preview) {
         alert(error.message || "画像の読み込みに失敗しました");
     }
 }
+
+function findChoiceImageInput(questionIndex, choiceIndex) {
+    return document.querySelector(
+        ".choiceImageInput[data-question-index=\"" + questionIndex +
+        "\"][data-choice-index=\"" + choiceIndex + "\"]"
+    );
+}
+
+async function createSurvey() {
+    const questionInputs = document.querySelectorAll(".questionInput");
+    const questions = [];
+
+    questionInputs.forEach((questionInput, questionIndex) => {
+        const question = questionInput.value.trim();
+
+        if (question === "") {
+            return;
+        }
+
+        const choices = [];
+
+        for (let choiceIndex = 0; choiceIndex < MAX_CHOICES; choiceIndex += 1) {
+            const choiceInput = document.querySelector(
+                ".choiceInput[data-question-index=\"" + questionIndex +
+                "\"][data-choice-index=\"" + choiceIndex + "\"]"
+            );
+            const imageInput = findChoiceImageInput(questionIndex, choiceIndex);
+            const value = choiceInput ? choiceInput.value.trim() : "";
+            const image = imageInput && typeof imageInput.dataset.imageData === "string"
+                ? imageInput.dataset.imageData
+                : "";
+
+            if (value !== "" || image !== "") {
+                choices.push({
+                    text: value !== "" ? value : "画像の選択肢",
+                    image
+                });
+            }
+        }
+
+        if (choices.length < 2) {
+            throw new Error("質問" + (questionIndex + 1) + "は選択肢を2つ以上入力してください");
+        }
+
+        questions.push({
+            question,
+            choices,
+            votes: new Array(choices.length).fill(0)
+        });
+    });
+
+    if (questions.length === 0) {
+        alert("少なくとも1つは質問を入力してください");
+        return;
+    }
+
+    surveyData = {
+        questions,
+        currentQuestionIndex: 0
+    };
+
+    void saveData();
+    startVoteScreen();
+}
+
+function startVoteScreen() {
+    document.getElementById("setupScreen").classList.add("hidden");
+    document.getElementById("voteScreen").classList.remove("hidden");
+    document.getElementById("resultScreen").classList.add("hidden");
+
+    renderCurrentQuestion();
+}
+
+function renderCurrentQuestion() {
+    const current = surveyData.questions[surveyData.currentQuestionIndex];
+    const area = document.getElementById("choicesArea");
+
+    document.getElementById("questionCounter").textContent =
+        "質問 " + (surveyData.currentQuestionIndex + 1) +
+        " / " + surveyData.questions.length;
+
+    document.getElementById("questionText").textContent = current.question;
+    area.textContent = "";
+
+    current.choices.forEach((choice, index) => {
+        const button = document.createElement("button");
+        button.className = "choiceBtn";
+        button.classList.add("choiceCard");
+        button.type = "button";
+
+        const text = document.createElement("div");
+        text.textContent = choice.text;
+        button.appendChild(text);
+
+        if (choice.image) {
+            const image = document.createElement("img");
+            image.className = "choiceCardImage";
+            image.src = choice.image;
+            image.alt = choice.text || "選択肢画像";
+            button.appendChild(image);
+        }
+
+        button.addEventListener("click", () => vote(index));
+        area.appendChild(button);
+    });
+
+    document.getElementById("prevQuestionButton").disabled =
+        surveyData.currentQuestionIndex === 0;
+
+    document.getElementById("nextQuestionButton").disabled =
+        surveyData.currentQuestionIndex === surveyData.questions.length - 1;
+}
+
+function moveQuestion(step) {
+    const nextIndex = surveyData.currentQuestionIndex + step;
+
+    if (nextIndex < 0 || nextIndex >= surveyData.questions.length) {
+        return;
+    }
+
+    surveyData.currentQuestionIndex = nextIndex;
+    void saveData();
+    renderCurrentQuestion();
+}
+
+function vote(choiceIndex) {
+    const current = surveyData.questions[surveyData.currentQuestionIndex];
+    current.votes[choiceIndex] += 1;
+    void saveData();
+    alert("投票しました");
+}
+
+function showResults() {
+    document.getElementById("voteScreen").classList.add("hidden");
+    document.getElementById("resultScreen").classList.remove("hidden");
+
+    const area = document.getElementById("resultsArea");
+    area.textContent = "";
+
+    surveyData.questions.forEach((item, questionIndex) => {
+        const section = document.createElement("section");
+        section.className = "resultQuestion";
+
+        const title = document.createElement("h3");
+        title.textContent = "質問" + (questionIndex + 1) + ": " + item.question;
+        section.appendChild(title);
+
+        item.choices.forEach((choice, choiceIndex) => {
+            const resultItem = document.createElement("div");
+            resultItem.className = "resultItem";
+
+            const text = document.createElement("div");
+            text.textContent = choice.text + ": " + item.votes[choiceIndex] + "票";
+            resultItem.appendChild(text);
+
+            if (choice.image) {
+                const image = document.createElement("img");
+                image.className = "choiceCardImage";
+                image.src = choice.image;
+                image.alt = choice.text || "選択肢画像";
+                resultItem.appendChild(image);
+            }
+
+            section.appendChild(resultItem);
+        });
+
+        area.appendChild(section);
+    });
+}
+
+function backToVote() {
+    document.getElementById("resultScreen").classList.add("hidden");
+    document.getElementById("voteScreen").classList.remove("hidden");
+    renderCurrentQuestion();
+}
+
+async function backToSetup() {
+    if (!confirm("現在のアンケートを破棄して、新しく作成しますか？")) {
+        return;
+    }
+
+    await removeAppState(DRAFT_KEY);
+
+    surveyData = emptySurveyData();
+    renderSetupInputs();
+
+    document.getElementById("questionCounter").textContent = "";
+    document.getElementById("questionText").textContent = "";
+    document.getElementById("choicesArea").textContent = "";
+    document.getElementById("resultsArea").textContent = "";
+
+    document.getElementById("voteScreen").classList.add("hidden");
+    document.getElementById("resultScreen").classList.add("hidden");
+    document.getElementById("setupScreen").classList.remove("hidden");
+}
+
+function resetVotes() {
+    if (!confirm("投票をリセットしますか？")) {
+        return;
+    }
+
+    surveyData.questions = surveyData.questions.map((item) => ({
+        question: item.question,
+        choices: item.choices.map((choice) => ({
+            text: choice.text,
+            image: choice.image
+        })),
+        votes: new Array(item.choices.length).fill(0)
+    }));
+
+    void saveData();
+    alert("リセットしました");
+}
+
+function formatSavedAt(timestamp) {
+    const date = new Date(timestamp);
+    return date.toLocaleString("ja-JP");
+}
+
+async function renderSavedSurveys() {
+    const area = document.getElementById("savedSurveysArea");
+    area.textContent = "";
+
+    if (storageMode === "memory") {
+        area.textContent = "この環境では保存済み一覧は使えません。";
+        return;
+    }
+
+    const items = await listSavedSurveys();
+
+    if (items.length === 0) {
+        area.textContent = "保存済みアンケートはありません。";
+        return;
+    }
+
+    items.forEach((item) => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "savedSurveyItem";
+
+        const title = document.createElement("div");
+        title.className = "savedSurveyTitle";
+        title.textContent = item.name;
+        wrapper.appendChild(title);
+
+        const meta = document.createElement("div");
+        meta.className = "savedSurveyMeta";
+        meta.textContent =
+            item.data.questions.length + "件の質問 / 保存日時: " + formatSavedAt(item.savedAt);
+        wrapper.appendChild(meta);
+
+        const buttons = document.createElement("div");
+        buttons.className = "actionButtons";
+
+        const loadButton = document.createElement("button");
+        loadButton.type = "button";
+        loadButton.textContent = "開く";
+        loadButton.addEventListener("click", async () => {
+            const saved = await loadNamedSurvey(item.id);
+            const normalized = saved ? normalizeSurveyData(saved.data) : null;
+            if (!normalized) {
+                alert("保存データを読み込めませんでした");
+                return;
+            }
+
+            surveyData = normalized;
+            surveyData.currentQuestionIndex = Math.min(
+                surveyData.currentQuestionIndex,
+                surveyData.questions.length - 1
+            );
+            await saveData();
+            startVoteScreen();
+        });
+        buttons.appendChild(loadButton);
+
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.textContent = "削除";
+        deleteButton.addEventListener("click", async () => {
+            if (!confirm("「" + item.name + "」を削除しますか？")) {
+                return;
+            }
+
+            await deleteNamedSurvey(item.id);
+            await renderSavedSurveys();
+        });
+        buttons.appendChild(deleteButton);
+
+        wrapper.appendChild(buttons);
+        area.appendChild(wrapper);
+    });
+}
+
+async function saveCurrentSurveyByName() {
+    if (storageMode === "memory") {
+        alert("この環境では保存機能を使えません");
+        return;
+    }
+
+    if (!isValidSurveyData(surveyData)) {
+        alert("保存できるアンケートがありません");
+        return;
+    }
+
+    const input = document.getElementById("saveSurveyNameInput");
+    const name = input.value.trim();
+
+    if (name === "") {
+        alert("保存名を入力してください");
+        return;
+    }
+
+    await saveNamedSurvey(name);
+    input.value = "";
+    await renderSavedSurveys();
+    alert("保存しました");
+}
+
+async function initializeApp() {
+    renderSetupInputs();
+    await initializeStorage();
+    await renderSavedSurveys();
+    await loadData();
+}
+
+document.getElementById("createSurveyButton").addEventListener("click", () => {
+    createSurvey().catch((error) => {
+        alert(error.message);
+    });
+});
+
+document.getElementById("prevQuestionButton").addEventListener("click", () => {
+    moveQuestion(-1);
+});
+
+document.getElementById("nextQuestionButton").addEventListener("click", () => {
+    moveQuestion(1);
+});
+
+document.getElementById("showResultsButton").addEventListener("click", showResults);
+document.getElementById("resetVotesButton").addEventListener("click", resetVotes);
+document.getElementById("backToVoteButton").addEventListener("click", backToVote);
+document.getElementById("backToSetupButton").addEventListener("click", () => {
+    void backToSetup();
+});
+document.getElementById("backToSetupFromResultButton").addEventListener("click", () => {
+    void backToSetup();
+});
+document.getElementById("saveSurveyButton").addEventListener("click", () => {
+    void saveCurrentSurveyByName();
+});
+
+void initializeApp();
 </script>
+
+</body>
+</html>
